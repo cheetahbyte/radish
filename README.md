@@ -2,3 +2,15 @@
 <h1>Radish </h1>
 
 <p>a simple router in Python</p>
+
+
+- simple
+- elegant
+- comprehensiv
+
+
+## Features: 
+- regex matching
+- simple matching
+- dynamic routes
+- parameters

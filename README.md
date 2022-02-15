@@ -1,7 +1,7 @@
 <img src="https://cdn.discordapp.com/attachments/857979752991031296/943164374510600284/radish3.svg" alt="Radish" style="width: 250px; rotate: 60deg;"  align="right"/>
 <h1>Radish </h1>
 
-<p>Radish is a simple router implementation for my web framework, [Ermine](https://github.com/cheetahbyte/ermine/blob/main/README.md). However, it can also be used for other things, and provides complete typing. It does not use radix trees, but can be used with regex./p>
+<p>Radish is a simple router implementation for my web framework, [Ermine](https://github.com/cheetahbyte/ermine). However, it can also be used for other things, and provides complete typing. It does not use radix trees, but can be used with regex./p>
 
 
 - simple

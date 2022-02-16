@@ -3,22 +3,23 @@
 
 <p>Radish is a simple router implementation for my web framework, <a href="https://github.com/cheetahbyte/ermine">Ermine</a>. However, it can also be used for other things, and provides complete typing. It does not use radix trees, but can be used with regex.</p>
 
-Radish is inspired by:
-- https://github.com/klen/http-router
-- https://github.com/nekonoshiri/tiny-router
-
+### 🔑 Key Features
 - simple
 - elegant
 - comprehensiv
 
+### 🤔 Inspiration
+Radish is inspired by:
+- https://github.com/klen/http-router
+- https://github.com/nekonoshiri/tiny-router
 
-## Features: 
+## 🌟 Features: 
 - [ ] regex matching
 - [x] simple matching
 - [ ] dynamic routes
 - [ ] parameters
 
-## Examples
+## 🔭 Examples
 
 > Basic static route matching
 

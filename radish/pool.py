@@ -1,56 +1,181 @@
-from ast import Call
-import re
-from typing import Any, Callable, List, Mapping, TypedDict
-
-from radish.exceptions import MethodNotAllowed, NotFound
-from radish.typings import Route, StoredRoute, RoutingPriority
-from radish.utils import make_route, matches, conv_wildcards
-
-__all__ = ["Pool"]
+from typing import Callable, Tuple
+from radish.utils import is_wildcard, longest_common_prefix, split_from_first_slash, throw
 
 
+class Node:
+    def __init__(self, path: str = "", handler: Callable = None, children=dict()) -> None:
+        self.children: dict = children
+        self.path: str = path
+        self.handler: Callable = handler
+
+    def add(self, path: str, handler: Callable) -> None:
+        n = self
+        i = 0
+
+        while i < len(path) and not is_wildcard(path[i]):
+            i += 1
+        n = n.merge(path[0:i])
+        j: int = i
+        while i < len(path):
+            if is_wildcard(path[i]):
+                if j != i:
+                    n = n.insert(path[j:i])
+                    j = i
+            i += 1
+
+            while i < len(path) and path[i] != "/":
+                if is_wildcard(path[i]):
+                    raise Exception(
+                        f"only one wildcard per path segment is allowed, has: {path[j:i]} in path {path}")
+                i += 1
+
+            if path[j] == ":" and i - j == 1:
+                raise Exception(
+                    f"param must be named with a non-empty name in path {path}")
+
+            n = n.insert(path[j:i])
+            j = i
+
+        if j == len(path):
+            n.merge("", handler)
+
+        else:
+            n.insert(path[j:], handler)
+
+    def find(self, path: str) -> Tuple[Callable, dict]:
+        handler = None
+        params = dict()
+
+        stack = [
+            [self, path, False]
+        ]
+
+        i = 0
+
+        while i >= 0:
+            n, p, v = stack[i]
+            np = None
+
+            if v:
+                i -= 1
+                if n.path[0] == ":":
+                    params[f"{n.path[1:]}"] = None
+                continue
+            else:
+                stack[i][2] = True
+
+            if n.path[0] == "*":
+                if len(n.path) > 1:
+                    params[f"{n.path[1:]}"] = p
+                np = None
+            elif n.path[0] == ":":
+                _cp, _np = split_from_first_slash(p)
+                params[f"{n.path[1:]}"] = _cp
+                if _np == "":
+                    np = None
+                else:
+                    np = _np
+            elif n.path == p:
+                if n.handler == None:
+                    if "*" in n.children.keys():
+                        np = ""
+                    else:
+                        i -= 1
+                        continue
+                else:
+                    np = None
+            else:
+                lcp = longest_common_prefix(n.path, p)
+                if lcp != len(n.path):
+                    i -= 1
+                    continue
+                else:
+                    np = p[lcp:]
+
+            if np == None:
+                handler = n.handler
+                break
+
+            c = n.children.get("*")
+            if c != None:
+                i += 1
+                stack.insert(i, [c, np, False])
+
+            if np == "":
+                continue
+
+            c = n.children.get(":")
+            if c != None:
+                i += 1
+                stack.insert(i, [c, np, False])
+
+            c = n.children.get(np[0])
+            if c != None:
+                i += 1
+                stack.insert(i, [c, np, False])
+
+        return [handler, params]
+
+    def merge(self, path, handler=None):
+        n = self
+
+        if n.path == "" and len(n.children) == 0:
+            n.path = path
+            n.handler = handler
+
+            return n
+
+        if path == "":
+            if n.handler != None:
+                raise Exception(
+                    f"A handler is already registered for path {n.path}")
+            n.handler = handler
+
+            return n
+
+        while True:
+            i = longest_common_prefix(path, n.path)
+
+            if i < len(n.path):
+                c = Node(n.path[i:], n.handler, n.children)
+
+                n.children = dict()
+                n.children[f"{c.path[0]}"] = c
+                n.path = path[0:i]
+                n.handler = None
+
+            if i < len(path):
+                path = path[i:]
+                c = n.children.get(path[0])
+
+                if c != None:
+                    n = c
+                    continue
+
+                c = Node(path, handler)
+                n.children[f"{path[0]}"] = c
+                n = c
+            elif handler != None:
+                if n.handler != None:
+                    raise Exception(
+                        f"a handler is already registered for path {path}")
+                n.handler = handler
+            break
+
+        return n
+
+    def insert(self, path: str, handler: Callable=None) -> "Node":
+        n = self
+        
+        c = n.children.get(path[0])
+
+        if c != None:
+            n = c.merge(path, handler)
+        else:
+            c = Node(path, handler)
+            n.children[f"{path[0]}"] = c
+            n = c
+        
+        return n
 
 
-# regex for dynamic route parameters
-dyn_regex = r"(\:(?P<var>[a-zA-Z]+)(?:\|(?P<var_type>[a-z]+))?)"
-wld = r"(?P<wildcard>\*.*)"
-
-group = r"(:(?P<paramname>[a-zA-Z]+)(?:\|(?P<paramtype>[a-z]+))?)"
-
-wild_card = r"\/?(?P<wildcard>\*[\da-zA-Z-]+)\/?"
-wild_card_replace = r""
-class Pool(object):
-    def __init__(self, method: str) -> None:
-        self.method: str = method
-        self.routes: List[StoredRoute] = []
-
-    def insert(self, path: str, handler: Callable, **kwargs) -> None:
-        route: StoredRoute = {"path": path, "handler": handler, "vars": [], "params": {}}
-        # check if route is dynamic
-        route["dynamic"] = True if (":" in path or "*" in path) else False
-        if route["dynamic"]:
-            dyn_matches = [m.groupdict() for m in re.finditer(dyn_regex, path, re.IGNORECASE)]
-            wld_matches = [conv_wildcards(m.groupdict()) for m in re.finditer(wld, path, re.IGNORECASE)]
-            variables = dyn_matches + wld_matches
-            route["vars"] = variables
-            for val in route["vars"]:
-                pass
-
-
-    def get(self, path: str) -> Route:
-        route: Route = {"path": path, "handler": None, "params": {}}
-        for r in self.routes:
-            if r["path"] == path:
-                route["handler"] = r["handler"]
-                route["params"] = r["params"]
-                route["path"] = r["path"]
-                return route
-            # check if first part of route matches
-            elif r["dynamic"] and matches(path, r["path"]):
-                route = make_route(path, route, r)
-                if route:
-                    return route
-        raise NotFound("Route not found")
-
-    def __repr__(self) -> str:
-        return f"<Pool method={self.method} routes={self.routes}>"

@@ -11,7 +11,7 @@
 
 ## Quick example
 
-<img src="https://cdn.discordapp.com/attachments/826113544021082143/943460509804527686/unknown.png"/>
+<img src="https://cdn.discordapp.com/attachments/826113544021082143/943460509804527686/unknown.png" style="width: 350px;"/>
 
 
 ## ⬇️ Installation

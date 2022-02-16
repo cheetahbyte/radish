@@ -9,3 +9,6 @@ class MethodNotAllowed(RadishError):
 
 class AlreadyExists(RadishError):
     pass
+
+class DynamicError(RadishError):
+    pass

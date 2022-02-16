@@ -1,5 +1,5 @@
 from typing import List, Mapping, Callable
-from radish.pool import Pool, Route
+from radish.pool import Pool
 
 class Radish:
     """Radish Router"""

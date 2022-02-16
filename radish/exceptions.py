@@ -6,3 +6,6 @@ class NotFound(RadishError):
 
 class MethodNotAllowed(RadishError):
     pass
+
+class AlreadyExists(RadishError):
+    pass

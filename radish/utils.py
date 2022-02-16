@@ -1,41 +1,25 @@
-import re
-from typing import Any
-from uuid import UUID
-from radish.typings import Route, StoredRoute, WildCardVar
-from radish.exceptions import DynamicError
+from typing import Tuple
 
 
-var_types = {
-    "int": int,
-    "float": float,
-    "str": str,
-    "uuid": UUID,
-}
+def throw(expr: str, msg: str) -> None:
+    if not expr:
+        raise Exception(msg)
 
-def matches(path: str, regex) -> bool:
-    return re.match(regex, path, re.IGNORECASE) is not None
+def is_wildcard(c: str) -> bool:
+    assert len(c) == 1, "Length of wildcard is only 1, please provide a name"
+    return c == ":" or c == "*"
 
 
+def split_from_first_slash(path: str) -> Tuple[str, str]:
+    i = 0
+    while i < len(path) and path[i] != "/":
+        i += 1
+    return (path[0:i], path[i:])
 
-def make_route(path: str, route: Route, stored_route: StoredRoute) -> Route | None:
-    raw_matches = [m.groups() for m in re.finditer(stored_route["path"], path, re.IGNORECASE)]
-    params: dict = {}
-    matches: list = []
-    if not raw_matches:
-        return None
-    if isinstance(raw_matches[0], tuple):
-        for tup in raw_matches:
-            for i in range(len(tup)):
-                matches.append(tup[i])
-    
-    for i in zip(matches, stored_route ["vars"]):
-        typ = var_types[i[1]["type"]] if i[1]["type"] else str
-        params[i[1]["var"]] = typ(i[0])
-    route["handler"] = stored_route["handler"]
-    route["params"] = params
-    route["path"] = path
-    return route
+def longest_common_prefix(a: str, b: str) -> int:
+    i = 0
+    length = min(len(a), len(b))
+    while i < length and a[i] == b[i]:
+        i += 1
+    return i
 
-
-def conv_wildcards(wildcard: dict) -> WildCardVar:
-    return {"var": wildcard["wildcard"][1:], "var_type": "str", "extra": "wildcard"}

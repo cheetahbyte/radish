@@ -13,10 +13,10 @@ Radish is inspired by:
 
 
 ## Features: 
--[ ] regex matching
--[x] simple matching
--[ ] dynamic routes
--[ ] parameters
+- [ ] regex matching
+- [x] simple matching
+- [ ] dynamic routes
+- [ ] parameters
 
 ## Examples
 

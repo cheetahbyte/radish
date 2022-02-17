@@ -29,7 +29,7 @@ Radish is inspired by:
 - [x] dynamic routes
 - [x] parameters
 - [x] wildcards
-- [x] radix trees
+- [ ] regex
 
 ## 🔭 Examples
 
@@ -42,7 +42,7 @@ router = Radish()
 
 handler = lambda: "Hello World!"
 
-router.insert("get", "/hello/world", handler) # You can pass in any keyword argument . *¹
+router.insert("get", "/hello/world", handler)
 
 print(router.get("get", "/hello/world"))
 # will return  
@@ -61,7 +61,7 @@ handler = lambda: "Hello World!"
 
 router.insert("get", "/hello/:name", handler)
 
-router.insert("get", "/user/:uid", handler)
+router.insert("get", "/user/:uid|uuid", handler)
 
 router.insert("get", "/static/*filename", handler)
 
@@ -70,4 +70,3 @@ print(router.get("get", "/user/16e55f79-baa7-46ed-b9a8-8dabc35c6381"))
 print(router.get("get", "/hello/world"))
 ```
 ---
-*¹ Remember that method, handler and params are reserved keywords. You can use any other keyword.

@@ -1,5 +1,6 @@
 from typing import List, Mapping, Callable
-from radish.pool import Pool, Route
+from radish.pool import Pool
+from radish.exceptions import MethodNotAllowed
 
 class Radish:
     """Radish Router"""
@@ -11,12 +12,16 @@ class Radish:
         for method in self.methods:
             self.pools[method.lower()] = Pool(method)
 
-    def insert(self, method: str, route: str, handler: Callable, **kwargs: dict) -> None:
+    def insert(self, method: str, route: str, handler: Callable) -> None:
         """insert a new route into the pool"""
-        self.pools[method.lower()].insert(route, handler, **kwargs)
+        if (method.upper() not in self.methods):
+            raise MethodNotAllowed(method)
+        self.pools[method.lower()].insert(route, handler)
 
     def get(self, method: str, route: str) -> Callable:
         """get the handler for a route"""
+        if (method.upper() not in self.methods):
+            raise MethodNotAllowed(method)
         return self.pools[method.lower()].get(route)
 
     def __repr__(self) -> str:
